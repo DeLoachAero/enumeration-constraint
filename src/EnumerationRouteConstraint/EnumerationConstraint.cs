@@ -18,7 +18,7 @@ namespace DeLoachAero.WebApi
     ///   config.MapHttpAttributeRoutes(constraintResolver);
     /// </code>
     /// Then in your Route attribute you can use it like so; note the Enum type name must be fully
-    /// qualified, and if the Enum is embedded in another class use the namespace-qualified
+    /// namespace-qualified, and if the Enum is embedded in another class use the namespace-qualified
     /// class name of the parent object "+" the Enum name (ex. My.NameSpace.MyClass+ColorsEnum):
     /// <code>
     ///   [HttpGet, Route("colors/{color:enum(My.Namespace.ColorsEnum)}")]
@@ -27,14 +27,26 @@ namespace DeLoachAero.WebApi
     ///      return color;
     ///   }
     /// </code>
+    /// 
+    /// If you want the method parameter to get the value as an enumeration, you can safely do so
+    /// since the Web API engine will have already validated it; do note that you
+    /// should enable string enums in the Swagger config file, or on the enum itself using
+    /// [JsonConverter(typeof(StringEnumConverter))], if you are using Swagger to test your service.
+    /// <code>
+    ///   [HttpGet, Route("colors/{color:enum(My.Namespace.ColorsEnum)}")]
+    ///   public string GetColor(ColorsEnum color)
+    ///   {
+    ///      return color.ToString();
+    ///   }
+    /// </code>
     /// </remarks>
     public class EnumerationConstraint : IHttpRouteConstraint
 
     {
         /// <summary>
-        /// Hold the type of the Enum class to validate against
+        /// Holds the type of the Enum class to validate against
         /// </summary>
-        private readonly Type _enum;
+        public readonly Type EnumType;
 
         /// <summary>
         /// Constructor taking a namespace-qualified type name of the Enum type to use
@@ -45,7 +57,7 @@ namespace DeLoachAero.WebApi
 
             if (t == null || !t.IsEnum)
                 throw new ArgumentException("Argument is not an Enum type", "type");
-            _enum = t;
+            EnumType = t;
         }
 
         /// <summary>
@@ -81,7 +93,7 @@ namespace DeLoachAero.WebApi
                 {
                     // see if we can find the string in the enumeration members
                     stringVal = stringVal.ToLower();
-                    if (null != _enum.GetEnumNames().FirstOrDefault(a => a.ToLower().Equals(stringVal)))
+                    if (null != EnumType.GetEnumNames().FirstOrDefault(a => a.ToLower().Equals(stringVal)))
                     {
                         return true;
                     }
